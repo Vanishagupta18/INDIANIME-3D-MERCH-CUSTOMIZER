@@ -1,0 +1,366 @@
+*{
+    margin: 0px;
+    padding:0px;
+    box-sizing:border-box;
+}
+body{
+    font-family: 'Poppins',sans-serif;
+    
+}
+.navbar{
+    display: flex;
+    align-items: center;
+    padding: 20px;
+ 
+}
+nav{
+    flex: 1;
+    text-align: right;
+}
+nav ul{
+    display: inline-block;
+    list-style-type: none;
+
+}
+nav ul li{
+    display:inline-block;
+   margin-right:20px;
+}
+/* Dropdown container */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Style the dropdown button */
+.dropbtn {
+    text-decoration: none;
+    color: black;
+    padding: 10px 15px;
+    display: block;
+    font-size: 16px;
+}
+
+/* Dropdown content (hidden by default) */
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: white;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+    color: black;
+    padding: 10px 15px;
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+    text-align: left;
+}
+
+/* Add hover effect to dropdown links */
+.dropdown-content a:hover {
+    background-color: #ddd;
+}
+
+/* Show dropdown when hovering over the parent <li> */
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+.image-container {
+    position: relative;
+    width: 225;
+    height: 500px; 
+    overflow: hidden;
+}
+
+.image-container img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.5s ease;
+}
+
+.image-container img.hover-image {
+    opacity: 0; /* Initially hide the hover image */
+}
+
+.image-container:hover img.default-image {
+    opacity: 0; /* Hide the default image on hover */
+}
+
+.image-container:hover img.hover-image {
+    opacity: 1; /* Show the hover image on hover */
+}
+
+.rating i {
+    color: #950c0c; /* Default gray for stars */
+  }
+
+ /* Style for the magnifying glass icon */
+ .search-icon {
+    font-size: 30px;
+    cursor: pointer;
+    color: #333;
+    padding: 10px;
+    transition: color 0.3s ease;
+  }
+
+  .search-icon:hover {
+    color: #007BFF; /* Change color on hover */
+  }
+
+  /* Style for the search bar container */
+  .search-bar-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* The search bar, initially hidden */
+  .search-bar {
+    display: none;
+    margin-left: 10px;
+    padding: 8px;
+    font-size: 16px;
+    border: 2px solid #007BFF;
+    border-radius: 5px;
+    width: 200px;
+  }
+
+  /* Display search bar when it's active */
+  .search-bar.active {
+    display: inline-block;
+  }
+a{
+    text-decoration: none;
+    color:#010000;
+  
+}
+
+p{
+   
+    font-family: "DM Serif Text", serif;
+    font-weight: 400;
+    font-style: italic;
+    color: white;
+}
+.title{
+    font-family: "DM Serif Text", serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 35px;
+    color: #000000; 
+}
+
+.container
+{
+    max-width: 1300px;
+    margin:auto;
+    padding-left: 25px;
+    padding-right: 25px;
+}
+.row{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-around;
+   
+}
+.col-2{
+    flex-basis: 50%;
+    min-width: 300px;
+}
+.col-2 img{
+    max-width:100%;
+    
+    padding: 0px 0px;
+}
+ .col-2 h1{
+    font-size: 50px;
+    line-height:60px;
+    margin: 25px 0; 
+    
+}
+.btn
+{
+    display: inline-block;
+    background: #b30000;
+    color:#fff;
+    padding: 8px 30px;
+    margin:30px 0;
+    border-radius:30px;
+    transition: background 0.5s;
+}
+.btn:hover{
+    background: #000000;
+}
+.header{
+    background:radial-gradient(#871313,#181616)
+   
+}
+.header .row 
+{
+margin-top: 70px;
+}
+.categories{
+    margin: 70px 0;
+}
+.col-3{
+    flex-basis: 30%;
+    min-width: 250px;
+    margin-bottom:30px;
+}
+.col-3 img{
+    width:100%;
+}
+.small-container
+{
+    max-width:100%;
+    margin:0px;
+    padding-left: 25px;
+    padding-right: 25px;
+}
+.col-4{
+    flex-basis: 25%;
+    padding: 10px;
+    min-width: 200px;
+    margin-bottom: 50px;
+    transition: transform 0.5s;
+}
+.col-4 img{
+    width:100%;
+}
+.title
+{
+    text-align: center;
+    margin:0 auto 80px;
+    position:relative;
+    line-height:60px;
+    color: #060202;
+}
+.title::after{
+    content: '';
+    background: #ff523b;
+    width:80px;
+    height: 5px;
+    border-radius:5px;
+    position: absolute;
+    bottom: 0;
+    left:50%;
+    transform: translateX(-50%);
+}
+h4{
+    color:#555;
+    font-weight:normal;
+}
+.col-4 p{
+font-size: 14px;
+}
+.rating .fa{
+    color:#ff523b;
+}
+.col-4:hover{
+    transform: translateY(-5px);
+}
+
+/* offer */
+
+.offer
+{
+  
+    background:radial-gradient(#871313,#181616);
+    margin-top: 80px;
+    padding:0;
+}
+.offer .row{
+    margin: 0;
+    padding: 0;
+    justify-content: space-between;
+}
+
+.col-2 .offer-img{
+    padding: 50px;
+}
+.small-container {
+    width: 100%;
+    max-width: 100%; /* Adjust as needed for your layout */
+    margin: 0;
+}
+h2{
+    font-family: "DM Serif Text", serif;
+  font-weight: 400;
+  font-size: 21px;
+ 
+  color: white;
+
+}
+h1{
+    font-family: "DM Serif Text", serif;
+    color: rgb(0, 0, 0);
+}
+small{
+    font-family: "DM Serif Text", serif;
+    font-weight: 400;
+    color: white;
+    font-size: 20px;
+}
+/* footer */
+
+
+.footer{
+    background: #000;
+    color: #8a8a8a;
+    font-size: 14px;
+    padding: 60px 0 20px;
+}
+.footer p{
+    color: #8a8a8a;
+}
+.footer h3{
+    color: #fff;
+    margin-bottom:20px;
+}
+.footer-col-1, .footer-col-2, .footer-col-3, .footer-col-4{
+    min-width: 250px;
+    margin-bottom: 20px;
+}
+.footer-col-1{
+    flex-basis:30%;
+}
+.footer-col-2{
+    flex: 1;
+    text-align: center;
+}
+.footer-col-2 img{
+    width:180px;
+    margin-bottom:20px;
+}
+.footer-col-3, .footer-col-4{
+    flex-basis: 12%;
+    text-align: center;
+}
+ul{
+    list-style-type: none;
+}
+.app-logo{
+    margin-top: 20px;
+}
+.app-logo img{
+    width: 140px;
+}
+.footer hr{
+    border: none;
+    background: #b5b5b5;
+    height: 1px;
+    margin: 20px 0;
+}
+.Copyright{
+    text-align: center;
+}
+
+

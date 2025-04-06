@@ -1,0 +1,106 @@
+/* ==================== NAVBAR STYLES ==================== */
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+}
+
+nav {
+  flex: 1;
+  text-align: right;
+}
+
+nav ul {
+  display: inline-block;
+  list-style-type: none;
+}
+
+nav ul li {
+  display: inline-block;
+  margin-right: 20px;
+}
+
+a {
+  text-decoration: none;
+  color: #010000;
+}
+
+/* Dropdown */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropbtn {
+  text-decoration: none;
+  color: black;
+  padding: 10px 15px;
+  display: block;
+  font-size: 16px;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: white;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 10px 15px;
+  text-decoration: none;
+  display: block;
+  font-size: 14px;
+  text-align: left;
+}
+
+.dropdown-content a:hover {
+  background-color: #ddd;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* Search bar */
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.search-bar {
+  display: none;
+  margin-left: 10px;
+  padding: 8px;
+  font-size: 16px;
+  border: 2px solid #007BFF;
+  border-radius: 5px;
+  width: 200px;
+}
+
+.search-bar.active {
+  display: inline-block;
+}
+
+.search-icon {
+  font-size: 30px;
+  cursor: pointer;
+  color: #333;
+  padding: 10px;
+  transition: color 0.3s ease;
+}
+
+.search-icon:hover {
+  color: #007BFF;
+}
+
+/* Header background */
+.header {
+  background: radial-gradient(#871313, #181616);
+}
+/* ==================== /NAVBAR STYLES ==================== */
