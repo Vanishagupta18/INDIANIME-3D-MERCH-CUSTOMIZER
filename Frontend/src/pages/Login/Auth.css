@@ -1,0 +1,103 @@
+﻿.auth-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.auth-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 64px;
+  background: var(--black);
+}
+
+.auth-brand { margin-bottom: 40px; }
+
+.auth-title {
+  font-size: 48px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.auth-sub { color: var(--text-muted); font-size: 15px; margin-bottom: 36px; }
+
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(232,28,14,0.08);
+  border: 1px solid rgba(232,28,14,0.3);
+  color: #ff6b6b;
+  padding: 12px 16px;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.auth-form { display: flex; flex-direction: column; gap: 20px; }
+
+.field { display: flex; flex-direction: column; gap: 8px; }
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.auth-submit {
+  width: 100%;
+  justify-content: center;
+  font-size: 16px;
+  padding: 15px;
+  margin-top: 8px;
+  clip-path: none;
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-top: 24px;
+}
+
+.auth-switch a { color: var(--red); font-weight: 600; text-decoration: none; }
+.auth-switch a:hover { text-decoration: underline; }
+
+/* Visual panel */
+.auth-visual {
+  position: relative;
+  background: var(--black-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.auth-visual__overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(232,28,14,0.15) 0%, transparent 70%);
+}
+
+.auth-visual img {
+  max-width: 60%;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 0 60px rgba(232,28,14,0.2));
+}
+
+.auth-visual__text {
+  position: absolute;
+  bottom: 48px;
+  left: 48px;
+  z-index: 2;
+}
+
+@media (max-width: 768px) {
+  .auth-page { grid-template-columns: 1fr; min-height: auto; }
+  .auth-card { padding: 40px 24px; }
+  .auth-visual { display: none; }
+  .auth-title { font-size: 36px; }
+}
