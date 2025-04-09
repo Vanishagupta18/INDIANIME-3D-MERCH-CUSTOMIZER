@@ -1,64 +1,69 @@
-import React from "react";
-import "./footer.css";
+import { Link } from 'react-router-dom'
+import './Footer.css'
 
 export default function Footer() {
   return (
-    <>
-      <div className="footer">
+    <footer className="site-footer">
+      <div className="footer-top">
         <div className="container">
-          <div className="row">
-            {/* -------- Column 1 -------- */}
-            <div className="footer-col-1">
-              <h3>Download our App</h3>
-              <p>Download App for Android and iOS mobile phones.</p>
-              <div className="app-logo">
-                <img
-                  src="/images/playstore-removebg-preview.png"
-                  alt="Playstore"
-                />
-                <img src="/images/pngwing.com.png" alt="App Store" />
+          <div className="footer-grid">
+            <div className="footer-brand">
+              <img src="/LOGO/INDIANIME.png" alt="INDIANIME" height="40" />
+              <p>Premium anime streetwear, made for India. Wear your fandom with pride.</p>
+              <div className="footer-socials">
+                <a href="#" aria-label="Instagram"><i className="fa-brands fa-instagram" /></a>
+                <a href="#" aria-label="Twitter"><i className="fa-brands fa-twitter" /></a>
+                <a href="#" aria-label="YouTube"><i className="fa-brands fa-youtube" /></a>
               </div>
             </div>
 
-            {/* -------- Column 2 -------- */}
-            <div className="footer-col-2">
-              <img
-                src="/images/INDIANIME.png"
-                alt="Indianime Logo"
-              />
-              <p>
-                Wear your anime spirit, made for India – Unleash your fandom with
-                Indianime!
-              </p>
-            </div>
-
-            {/* -------- Column 3 -------- */}
-            <div className="footer-col-3">
-              <h3>Useful Links</h3>
-              <ul>
-                <li>Coupons</li>
-                <li>Blog Post</li>
-                <li>Return Policy</li>
-                <li>Contact Us</li>
+            <div>
+              <h4 className="footer-heading">Shop</h4>
+              <ul className="footer-links">
+                {['naruto','one-piece','demon-slayer','jujutsu-kaisen','attack-on-titan'].map(a => (
+                  <li key={a}>
+                    <Link to={`/products?anime=${a}`}>{a.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</Link>
+                  </li>
+                ))}
+                <li><Link to="/customize">Custom Design</Link></li>
               </ul>
             </div>
 
-            {/* -------- Column 4 -------- */}
-            <div className="footer-col-4">
-              <h3>Follow Us</h3>
-              <ul>
-                <li>Facebook</li>
-                <li>Instagram</li>
-                <li>Twitter</li>
-                <li>YouTube</li>
+            <div>
+              <h4 className="footer-heading">Account</h4>
+              <ul className="footer-links">
+                <li><Link to="/login">Sign In</Link></li>
+                <li><Link to="/register">Register</Link></li>
+                <li><Link to="/orders">My Orders</Link></li>
+                <li><Link to="/profile">Profile</Link></li>
+                <li><Link to="/cart">Cart</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="footer-heading">Help</h4>
+              <ul className="footer-links">
+                <li><a href="#">Size Guide</a></li>
+                <li><a href="#">Return Policy</a></li>
+                <li><a href="#">Track Order</a></li>
+                <li><a href="#">Contact Us</a></li>
+                <li><a href="#">FAQ</a></li>
               </ul>
             </div>
           </div>
-
-          <hr />
-          <p className="Copyright">Copyright © 2025 INDIANIME</p>
         </div>
       </div>
-    </>
-  );
+
+      <div className="footer-bottom">
+        <div className="container">
+          <p className="footer-copy">© 2025 INDIANIME. All rights reserved. Made with ❤️ in India.</p>
+          <div className="footer-badges">
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>SECURE PAYMENTS</span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>100% AUTHENTIC</span>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-muted)' }}>FREE RETURNS</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  )
 }
