@@ -1,0 +1,9 @@
+﻿.not-found { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; }
+.not-found__number { font-size: 120px; font-weight: 800; color: #f3f4f6; line-height: 1; margin-bottom: 8px; }
+.not-found h1 { font-size: 28px; font-weight: 700; margin: 0 0 10px; color: #1a1a1a; }
+.not-found p { color: #6b7280; font-size: 15px; margin: 0 0 28px; }
+.not-found__actions { display: flex; gap: 12px; }
+.btn-back { padding: 11px 24px; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: #374151; transition: border-color 0.2s; }
+.btn-back:hover { border-color: #871313; color: #871313; }
+.btn-home { padding: 11px 24px; background: radial-gradient(#871313, #181616); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+.btn-home:hover { opacity: 0.9; }
