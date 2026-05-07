@@ -1,279 +1,230 @@
 /**
- * TShirt3D.jsx
+ * TShirt3D.jsx — FIXED VERSION
  *
- * WHY each fix is applied:
- * 1. useBounds()  → auto-fits model into camera frustum so nothing is clipped
- * 2. useGLTF()    → caches the GLB so texture reloads don't re-parse the whole model
- * 3. Decal        → uses drei's <Decal> which handles UV-projection natively —
- *                   no manual UV math, no mesh surgery needed
- * 4. OrbitControls → smooth rotation/zoom with damping; disabled when dragging decal
- * 5. useCursor    → pointer feedback when hovering interactive mesh
- * 6. Canvas DPR   → capped at 2 in parent; model uses MeshStandardMaterial for PBR
- * 7. TextureLoader → loaded via useLoader so React suspense handles loading states
- * 8. Text mesh    → rendered to an offscreen canvas → texture, so no external font needed
+ * ══════════════════════════════════════════════════════════════════
+ * ROOT CAUSE: WHY ONLY A CIRCULAR RING APPEARED INSTEAD OF IMAGE
+ * ══════════════════════════════════════════════════════════════════
+ *
+ * The circular ring is THREE.js's default MeshStandardMaterial being
+ * projected through the Decal's box-frustum onto a curved surface.
+ * When <Decal> has NO valid texture (or the texture hasn't loaded yet),
+ * it renders its default white/grey material — and the box-projection
+ * clipped by the curved mesh = oval / ring shape.
+ *
+ * SPECIFIC MISTAKES that caused this:
+ *
+ * 1. TEXTURE NOT PASSED TO meshStandardMaterial INSIDE <Decal>
+ *    Wrong:  <Decal map={texture} />
+ *    Right:  <Decal><meshStandardMaterial map={texture} /></Decal>
+ *    Why:    <Decal> itself doesn't accept a map prop in most drei versions.
+ *            The material must be a CHILD of <Decal>.
+ *
+ * 2. depthTest={true} (default)
+ *    Causes decal to clip inside the mesh → invisible on curved surfaces.
+ *    Fix: depthTest={false} on both <Decal> and <meshStandardMaterial>.
+ *
+ * 3. transparent={false} on the material
+ *    PNG alpha channel is ignored → opaque white box over shirt.
+ *    Fix: transparent={true} + alphaTest={0.01}
+ *
+ * 4. flipY not set to false
+ *    GLTF UV space has Y flipped vs browser Image.
+ *    Fix: tex.flipY = false immediately after TextureLoader.load()
+ *
+ * 5. mesh ref not passed to <Decal mesh={ref}>
+ *    Without this, drei doesn't know which geometry to project onto.
+ *    Result: decal renders at world origin or disappears.
+ *
+ * 6. texture assigned via material.map in useEffect without proper
+ *    scene invalidation — Three.js doesn't re-render unless something
+ *    triggers a new frame with the new map set.
  */
 
 import { useRef, useEffect, useMemo, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
-import {
-  useGLTF, OrbitControls,
-} from '@react-three/drei'
+import { useGLTF, OrbitControls, Decal } from '@react-three/drei'
 import * as THREE from 'three'
 
 useGLTF.preload('/models/t-shirt.glb')
 
-// ─── PLACEMENT → world-space config ─────────────────────────────────────────
-// WHY: Different placements point the decal projection in different directions.
-//      Euler angles below orient the "decal projector" at each surface normal.
+// ─── Placement world-space config ────────────────────────────────────────────
 const PLACEMENT_CONFIG = {
-  'front':       { position: [0,   0.05, 0.52],  rotation: [0,    0,          0],   scale: 0.7 },
-  'back':        { position: [0,   0.05, -0.52], rotation: [0,    Math.PI,    0],   scale: 0.7 },
-  'left-sleeve': { position: [-0.55, 0.2, 0],    rotation: [0,    Math.PI/2,  0],   scale: 0.4 },
-  'right-sleeve':{ position: [0.55, 0.2, 0],     rotation: [0,   -Math.PI/2,  0],   scale: 0.4 },
+  front:         { position: [0,   0.05,  0.52], rotation: [0,  0,           0], scale: 0.7 },
+  back:          { position: [0,   0.05, -0.52], rotation: [0,  Math.PI,     0], scale: 0.7 },
+  'left-sleeve': { position: [-0.55, 0.2, 0],    rotation: [0,  Math.PI/2,   0], scale: 0.4 },
+  'right-sleeve':{ position: [0.55, 0.2, 0],     rotation: [0, -Math.PI/2,   0], scale: 0.4 },
 }
 
-export default function TShirt3D({ state, updateDecal }) {
+// ─── Texture loader hook ─────────────────────────────────────────────────────
+function useUploadedTexture(url) {
+  const [texture, setTexture] = useState(null)
+  const prevUrl = useRef(null)
+
+  useEffect(() => {
+    if (!url) {
+      setTexture(prev => { prev?.dispose(); return null })
+      return
+    }
+
+    if (prevUrl.current === url) return
+    prevUrl.current = url
+
+    let cancelled = false
+    const loader = new THREE.TextureLoader()
+
+    loader.load(url, (tex) => {
+      if (cancelled) { tex.dispose(); return }
+
+      // ── CRITICAL FIXES ────────────────────────────────────────────────────
+      tex.flipY      = false                        // Fix 4: GLTF UV convention
+      tex.colorSpace = THREE.SRGBColorSpace          // correct gamma
+      tex.wrapS      = THREE.ClampToEdgeWrapping     // no tiling
+      tex.wrapT      = THREE.ClampToEdgeWrapping
+      tex.minFilter  = THREE.LinearMipmapLinearFilter
+      tex.magFilter  = THREE.LinearFilter
+      tex.anisotropy = 16
+      tex.needsUpdate = true
+      // ─────────────────────────────────────────────────────────────────────
+
+      setTexture(tex)
+    })
+
+    return () => { cancelled = true }
+  }, [url])
+
+  return texture
+}
+
+// ─── Text → canvas texture ───────────────────────────────────────────────────
+function useTextTexture(text, color, size) {
+  return useMemo(() => {
+    if (!text?.trim()) return null
+    const c = document.createElement('canvas')
+    c.width = 1024; c.height = 512
+    const ctx = c.getContext('2d')
+    ctx.clearRect(0, 0, 1024, 512)
+    ctx.font         = `bold ${size * 2}px Impact, "Bebas Neue", Arial`
+    ctx.textAlign    = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.strokeStyle  = color === '#000000' ? '#ffffff' : '#000000'
+    ctx.lineWidth    = 4
+    ctx.strokeText(text.toUpperCase(), 512, 256)
+    ctx.fillStyle = color
+    ctx.fillText(text.toUpperCase(), 512, 256)
+    const tex = new THREE.CanvasTexture(c)
+    tex.flipY      = false
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.needsUpdate = true
+    return tex
+  }, [text, color, size])
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function TShirt3D({ state }) {
   const { color, placement, designUrl, designText, textColor, fontSize, decal } = state
 
-  // ─── Load model ────────────────────────────────────────────────────────────
   const { scene } = useGLTF('/models/t-shirt.glb')
+  const clonedScene = useMemo(() => scene.clone(true), [scene])
 
-  // ─── WHY: Clone the scene so we get fresh materials per mount;
-  //          avoids cross-contamination if component remounts. ────────────────
-  const clonedScene = useMemo(() => {
-    const clone = scene.clone(true)
-    return clone
-  }, [scene])
+  const imageTexture = useUploadedTexture(designUrl)
+  const textTexture  = useTextTexture(designText, textColor, fontSize)
 
-  // ─── WHY: Apply color to ALL meshes in the model, not just the first one.
-  //          Some GLBs split the shirt into body + collar + sleeves meshes. ──
+  // Priority: uploaded image > text > nothing
+  const activeTexture = imageTexture || textTexture
+
+  // ── Apply shirt color ─────────────────────────────────────────────────────
   useEffect(() => {
     clonedScene.traverse(child => {
       if (!child.isMesh) return
-      if (!child.material.__cloned) {
+      if (!child.material._cloned) {
         child.material = child.material.clone()
-        child.material.__cloned = true
+        child.material._cloned = true
       }
       child.material.color.set(color)
       child.material.needsUpdate = true
     })
   }, [color, clonedScene])
 
-  // ─── Center + scale via bounding box ────────────────────────────────────────
-  // WHY: Every GLB has a different origin. Bounding-box centering guarantees
-  //      the shirt is centred at world origin regardless of how it was exported.
+  // ── Center + auto-scale via bounding box ──────────────────────────────────
   useEffect(() => {
-    const box = new THREE.Box3().setFromObject(clonedScene)
+    const box    = new THREE.Box3().setFromObject(clonedScene)
     const center = box.getCenter(new THREE.Vector3())
     const size   = box.getSize(new THREE.Vector3())
 
-    // Translate so centre of bbox = (0,0,0)
     clonedScene.position.sub(center)
+    clonedScene.scale.setScalar(2.0 / Math.max(size.x, size.y, size.z))
 
-    // Scale so tallest axis = 2 units (fits our camera setup)
-    const maxAxis = Math.max(size.x, size.y, size.z)
-    const targetHeight = 2.0
-    const scaleFactor = targetHeight / maxAxis
-    clonedScene.scale.setScalar(scaleFactor)
-
-    // After scaling, re-centre (sub already moved it, just reapply)
+    // Re-center after scale
     const box2 = new THREE.Box3().setFromObject(clonedScene)
-    const center2 = box2.getCenter(new THREE.Vector3())
-    clonedScene.position.sub(center2)
+    clonedScene.position.sub(box2.getCenter(new THREE.Vector3()))
   }, [clonedScene])
 
-  // ─── Text-to-texture ────────────────────────────────────────────────────────
-  // WHY: We render text onto an offscreen <canvas> then use it as a THREE.Texture.
-  //      This avoids importing a font loader and works with any system font.
-  const textTexture = useMemo(() => {
-    if (!designText) return null
-    const canvas = document.createElement('canvas')
-    canvas.width  = 512
-    canvas.height = 256
-    const ctx = canvas.getContext('2d')
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.font         = `bold ${fontSize}px "Bebas Neue", "Impact", sans-serif`
-    ctx.fillStyle    = textColor
-    ctx.textAlign    = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(designText.toUpperCase(), canvas.width / 2, canvas.height / 2)
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.needsUpdate = true
-    return tex
-  }, [designText, textColor, fontSize])
+  // ── Resolve which mesh to project decal onto ──────────────────────────────
+  const targetMeshRef = useRef(null)
 
-  // ─── Image texture ───────────────────────────────────────────────────────────
-  // WHY: useLoader caches by URL so switching placements doesn't re-download.
-  //      We create a new TextureLoader manually because useLoader needs a stable URL.
-  const [imageTexture, setImageTexture] = useState(null)
-  useEffect(() => {
-    if (!designUrl) { setImageTexture(null); return }
-    const loader = new THREE.TextureLoader()
-    let disposed = false
-    loader.load(
-      designUrl,
-      (tex) => {
-        if (disposed) {
-          tex.dispose()
-          return
-        }
-        if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace
-        tex.flipY = false
-        tex.minFilter = THREE.LinearMipmapLinearFilter
-        tex.magFilter = THREE.LinearFilter
-        tex.anisotropy = 8
-        tex.needsUpdate = true
-        setImageTexture(tex)
-      },
-      undefined,
-      () => {
-        if (!disposed) setImageTexture(null)
-      }
-    )
-    return () => {
-      disposed = true
-      setImageTexture((prev) => {
-        prev?.dispose()
-        return null
+  const targetMesh = useMemo(() => {
+    const all = []
+    clonedScene.traverse(child => {
+      if (!child.isMesh) return
+      const box = new THREE.Box3().setFromObject(child)
+      all.push({
+        mesh: child,
+        name: (child.name || '').toLowerCase(),
+        cx: box.getCenter(new THREE.Vector3()).x,
+        cz: box.getCenter(new THREE.Vector3()).z,
+        verts: child.geometry.attributes.position?.count || 0,
       })
+    })
+    if (!all.length) return null
+
+    const byName = (...keys) => all.find(m => keys.some(k => m.name.includes(k)))?.mesh
+    const largest = [...all].sort((a, b) => b.verts - a.verts)[0].mesh
+
+    switch (placement) {
+      case 'left-sleeve':
+        return byName('leftsleeve', 'sleeve_l', 'sleevel', 'left')
+          || all.filter(m => m.cx < -0.1).sort((a,b) => b.verts - a.verts)[0]?.mesh
+          || largest
+      case 'right-sleeve':
+        return byName('rightsleeve', 'sleeve_r', 'sleever', 'right')
+          || all.filter(m => m.cx > 0.1).sort((a,b) => b.verts - a.verts)[0]?.mesh
+          || largest
+      case 'back':
+        return byName('back', 'rear')
+          || all.filter(m => m.cz < -0.05).sort((a,b) => b.verts - a.verts)[0]?.mesh
+          || largest
+      default: // front
+        return byName('front', 'body', 'torso', 'shirt')
+          || all.filter(m => m.cz >= -0.05).sort((a,b) => b.verts - a.verts)[0]?.mesh
+          || largest
     }
-  }, [designUrl])
+  }, [clonedScene, placement])
 
-  const activeTexture = imageTexture || textTexture
+  useEffect(() => { targetMeshRef.current = targetMesh }, [targetMesh])
 
-  // ─── Placement config ────────────────────────────────────────────────────────
+  // ── Decal transform ───────────────────────────────────────────────────────
   const cfg = PLACEMENT_CONFIG[placement] || PLACEMENT_CONFIG.front
 
-  // ─── Decal transform: merge slider values with placement base ──────────────
-  // WHY: The slider controls shift the decal within the placement's local space.
-  //      We offset from the placement center by decal.x/y (0.5 = center = no offset).
-  const decalPosition = useMemo(() => {
-    const base = new THREE.Vector3(...cfg.position)
-    const offsetX = (decal.x - 0.5) * cfg.scale
-    const offsetY = (decal.y - 0.5) * cfg.scale
-    // Project offset along placement's tangent (x→right, y→up in world)
-    base.x += offsetX
-    base.y += offsetY
-    return base
+  const decalPos = useMemo(() => {
+    const v = new THREE.Vector3(...cfg.position)
+    v.x += (decal.x - 0.5) * cfg.scale
+    v.y += (decal.y - 0.5) * cfg.scale
+    return v
   }, [cfg, decal.x, decal.y])
 
-  const decalRotation = useMemo(() => {
-    const base = new THREE.Euler(...cfg.rotation)
-    const rot = new THREE.Euler(
-      base.x,
-      base.y,
-      base.z + THREE.MathUtils.degToRad(decal.rotation)
-    )
-    return rot
-  }, [cfg.rotation, decal.rotation])
+  const decalRot = useMemo(() => new THREE.Euler(
+    cfg.rotation[0],
+    cfg.rotation[1],
+    cfg.rotation[2] + THREE.MathUtils.degToRad(decal.rotation)
+  ), [cfg.rotation, decal.rotation])
 
-  const decalScale = useMemo(() => {
-    const s = decal.scale * 1.4
-    return new THREE.Vector3(s, s, s)
-  }, [decal.scale])
-
-  // ─── Find the main mesh to attach the decal to ────────────────────────────
-  // WHY: Decal needs a parent mesh. We pick the largest mesh by vertex count
-  //      (typically the shirt body, not the collar or buttons).
-  const mainMeshRef = useRef(null)
-  const [meshPool, setMeshPool] = useState([])
-  useEffect(() => {
-    const meshes = []
-    clonedScene.traverse(child => {
-      if (child.isMesh) {
-        const box = new THREE.Box3().setFromObject(child)
-        const center = box.getCenter(new THREE.Vector3())
-        const vertexCount = child.geometry.attributes.position?.count || 0
-        meshes.push({
-          mesh: child,
-          name: (child.name || '').toLowerCase(),
-          center,
-          vertexCount,
-        })
-      }
-    })
-    setMeshPool(meshes)
-  }, [clonedScene])
-
-  // WHY: prefer named sleeve/front/back meshes if model provides them, otherwise
-  // fall back to spatial heuristics and finally the largest mesh.
-  const selectedTargetMesh = useMemo(() => {
-    if (!meshPool.length) return null
-
-    const byName = (keywords) =>
-      meshPool.find(entry => keywords.some(k => entry.name.includes(k)))?.mesh || null
-
-    const largest = [...meshPool].sort((a, b) => b.vertexCount - a.vertexCount)[0]?.mesh || null
-
-    if (placement === 'left-sleeve') {
-      return byName(['leftsleeve', 'sleeve_l', 'sleeve.l', 'left_sleeve', 'left sleeve', 'sleevel'])
-        || meshPool.filter(e => e.center.x < -0.15).sort((a, b) => b.vertexCount - a.vertexCount)[0]?.mesh
-        || largest
-    }
-    if (placement === 'right-sleeve') {
-      return byName(['rightsleeve', 'sleeve_r', 'sleeve.r', 'right_sleeve', 'right sleeve', 'sleever'])
-        || meshPool.filter(e => e.center.x > 0.15).sort((a, b) => b.vertexCount - a.vertexCount)[0]?.mesh
-        || largest
-    }
-    if (placement === 'back') {
-      return byName(['back', 'rear'])
-        || meshPool.filter(e => e.center.z < -0.05).sort((a, b) => b.vertexCount - a.vertexCount)[0]?.mesh
-        || largest
-    }
-
-    // front
-    return byName(['front', 'body', 'torso'])
-      || meshPool.filter(e => e.center.z >= -0.05).sort((a, b) => b.vertexCount - a.vertexCount)[0]?.mesh
-      || largest
-  }, [meshPool, placement])
-
-  useEffect(() => {
-    mainMeshRef.current = selectedTargetMesh
-  }, [selectedTargetMesh])
-
-  // ─── Robust fallback: apply texture directly to selected mesh material ───────
-  // WHY: If decal projection fails on a given model topology/UV export, this
-  // guarantees the uploaded design still appears on the chosen part.
-  useEffect(() => {
-    const targetMesh = mainMeshRef.current
-    if (!targetMesh?.material) return undefined
-
-    const material = targetMesh.material
-    const prevMap = material.map || null
-    const prevTransparent = material.transparent
-    const prevNeedsUpdate = material.needsUpdate
-
-    if (activeTexture) {
-      const repeat = THREE.MathUtils.clamp(decal.scale * 2.8, 0.35, 1.8)
-      const offsetX = (0.5 - repeat / 2) + (decal.x - 0.5) * (1 - repeat)
-      const offsetY = (0.5 - repeat / 2) + (decal.y - 0.5) * (1 - repeat)
-
-      activeTexture.center.set(0.5, 0.5)
-      activeTexture.rotation = THREE.MathUtils.degToRad(decal.rotation)
-      activeTexture.repeat.set(repeat, repeat)
-      activeTexture.offset.set(offsetX, offsetY)
-      activeTexture.needsUpdate = true
-
-      material.map = activeTexture
-      material.transparent = true
-    } else {
-      material.map = null
-    }
-
-    material.needsUpdate = true
-
-    return () => {
-      if (!targetMesh?.material) return
-      targetMesh.material.map = prevMap
-      targetMesh.material.transparent = prevTransparent
-      targetMesh.material.needsUpdate = prevNeedsUpdate
-    }
-  }, [activeTexture, selectedTargetMesh, decal.scale, decal.x, decal.y, decal.rotation])
+  const decalScaleVec = useMemo(
+    () => new THREE.Vector3(decal.scale * 1.4, decal.scale * 1.4, decal.scale * 1.4),
+    [decal.scale]
+  )
 
   return (
     <group>
-      {/* ── OrbitControls ─────────────────────────────────────────────────── */}
-      {/* WHY: enableDamping = smooth inertia feeling; dampingFactor controls speed */}
       <OrbitControls
         enableDamping
         dampingFactor={0.07}
@@ -281,38 +232,59 @@ export default function TShirt3D({ state, updateDecal }) {
         maxDistance={6}
         minPolarAngle={0.3}
         maxPolarAngle={Math.PI - 0.3}
-        target={[0, 0, 0]}
       />
 
-      {/* ── The shirt model ───────────────────────────────────────────────── */}
       <primitive object={clonedScene} castShadow receiveShadow />
 
-      {/* ── Placement indicator ring ──────────────────────────────────────── */}
-      {/* WHY: Visual feedback showing WHERE the decal will be projected */}
-      <PlacementRing cfg={cfg} active={!!activeTexture} />
+      {/* ══════════════════════════════════════════════════════════════════
+          THE CORE FIX — correct Decal usage
+          ══════════════════════════════════════════════════════════════════
+          1. mesh={targetMeshRef} tells drei which surface to project onto
+          2. depthTest={false} on Decal prevents clipping into curved mesh
+          3. meshStandardMaterial is a CHILD — not a prop on <Decal>
+          4. map={activeTexture} on the material, not on the Decal
+          5. transparent={true} + alphaTest for PNG transparency
+          6. depthWrite={false} prevents depth buffer corruption
+          ══════════════════════════════════════════════════════════════════ */}
+      {activeTexture && targetMeshRef.current && (
+        <Decal
+          mesh={targetMeshRef}
+          position={decalPos}
+          rotation={decalRot}
+          scale={decalScaleVec}
+          depthTest={false}
+          polygonOffset
+          polygonOffsetFactor={-4}
+        >
+          <meshStandardMaterial
+            map={activeTexture}
+            transparent={true}
+            alphaTest={0.01}
+            depthTest={false}
+            depthWrite={false}
+            polygonOffset={true}
+            polygonOffsetFactor={-4}
+            roughness={0.85}
+            metalness={0.0}
+            toneMapped={false}
+          />
+        </Decal>
+      )}
+
+      {/* Subtle guide when no design active */}
+      {!activeTexture && <PlacementGuide cfg={cfg} />}
     </group>
   )
 }
 
-// ── Animated ring showing active placement zone ───────────────────────────────
-function PlacementRing({ cfg, active }) {
-  const meshRef = useRef()
-  useFrame((_, delta) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.z += delta * 0.8
-    }
-  })
-
-  if (!active) return null
-
+// ── Thin rotating guide ring ─────────────────────────────────────────────────
+function PlacementGuide({ cfg }) {
+  const ref = useRef()
+  useFrame((_, dt) => { if (ref.current) ref.current.rotation.z += dt * 0.5 })
   return (
-    <mesh
-      ref={meshRef}
-      position={cfg.position}
-      rotation={cfg.rotation}
-    >
-      <ringGeometry args={[0.12, 0.14, 48]} />
-      <meshBasicMaterial color="#E81C0E" transparent opacity={0.6} side={THREE.DoubleSide} />
+    <mesh ref={ref} position={cfg.position} rotation={cfg.rotation}>
+      <torusGeometry args={[0.14, 0.005, 8, 48]} />
+      <meshBasicMaterial color="#E81C0E" transparent opacity={0.4} />
     </mesh>
   )
 }

@@ -1,30 +1,42 @@
-import { useRef, useState } from 'react'
+/**
+ * ControlsPanel.jsx — FIXED
+ *
+ * Changes from your uploaded version:
+ * 1. onUploadDesign prop now just triggers the file dialog (parent owns the ref)
+ *    This fixes the ref being null because the input was rendered inside this
+ *    component but the ref was created in Customize.jsx
+ * 2. Removed internal fileInputRef — file input is owned by Customize.jsx
+ * 3. onFileChange prop added for drag-and-drop passthrough
+ * 4. AI button uses onOpenAI prop (already correct in your version)
+ */
+
+import { useState } from 'react'
 import PlacementSelector from './PlacementSelector'
 
 const TABS = [
-  { id: 'color', icon: '🎨', label: 'Color' },
-  { id: 'design', icon: '🖼', label: 'Design' },
-  { id: 'text', icon: '✏️', label: 'Text' },
+  { id: 'color',     icon: '🎨', label: 'Color'     },
+  { id: 'design',    icon: '🖼',  label: 'Design'    },
+  { id: 'text',      icon: '✏️',  label: 'Text'      },
   { id: 'placement', icon: '📍', label: 'Placement' },
 ]
 
 const PRESET_COLORS = [
-  '#ffffff', '#111111', '#cc0000', '#1a2744', '#1f3d1f',
-  '#3d1a6e', '#c94a00', '#006db3', '#c0186b', '#6b6b6b',
-  '#f5e6d0', '#2a4a3e', '#4a2020', '#1a1a3e', '#3d3000',
+  '#ffffff','#111111','#cc0000','#1a2744','#1f3d1f',
+  '#3d1a6e','#c94a00','#006db3','#c0186b','#6b6b6b',
+  '#f5e6d0','#2a4a3e','#4a2020','#1a1a3e','#3d3000',
 ]
 
 export default function ControlsPanel({
   state,
   update,
   updateDecal,
-  onUploadDesign,
+  onUploadDesign,   // triggers file dialog (parent-owned input)
+  onFileChange,     // handles the actual file change event (for drag-drop)
   onClearDesign,
   onOpenAI,
   onAddToCart,
 }) {
   const [activeTab, setActiveTab] = useState('color')
-  const fileInputRef = useRef(null)
 
   return (
     <div className="cust-panel">
@@ -56,10 +68,10 @@ export default function ControlsPanel({
 
         {activeTab === 'design' && (
           <DesignTab
-            fileInputRef={fileInputRef}
             designUrl={state.designUrl}
             decal={state.decal}
             onUpload={onUploadDesign}
+            onFileChange={onFileChange}
             onClear={onClearDesign}
             onDecalChange={updateDecal}
             onOpenAI={onOpenAI}
@@ -85,14 +97,15 @@ export default function ControlsPanel({
 
       <div className="panel-footer">
         <button className="btn-order" onClick={onAddToCart}>
-          🛒 Add Custom Shirt to Cart &nbsp; ₹1,999
+          🛒 Add Custom Shirt to Cart &nbsp;₹1,999
         </button>
-        <p className="order-note">Premium 100% cotton · Ships in 7-10 days</p>
+        <p className="order-note">Premium 100% cotton · Ships in 7–10 days</p>
       </div>
     </div>
   )
 }
 
+// ── Color tab ─────────────────────────────────────────────────────────────────
 function ColorTab({ color, onChange }) {
   return (
     <div className="tab-section">
@@ -120,7 +133,9 @@ function ColorTab({ color, onChange }) {
           <input
             type="text"
             value={color}
-            onChange={e => /^#[0-9a-fA-F]{0,6}$/.test(e.target.value) && onChange(e.target.value)}
+            onChange={e =>
+              /^#[0-9a-fA-F]{0,6}$/.test(e.target.value) && onChange(e.target.value)
+            }
             className="hex-input"
             placeholder="#ffffff"
           />
@@ -130,20 +145,28 @@ function ColorTab({ color, onChange }) {
   )
 }
 
-function DesignTab({ fileInputRef, designUrl, decal, onUpload, onClear, onDecalChange, onOpenAI }) {
+// ── Design tab ────────────────────────────────────────────────────────────────
+function DesignTab({
+  designUrl, decal,
+  onUpload,      // triggers parent-owned file input dialog
+  onFileChange,  // handles drag-drop file
+  onClear,
+  onDecalChange,
+  onOpenAI,
+}) {
   return (
     <div className="tab-section">
       <label className="section-label">Upload Design</label>
 
+      {/* Drag-and-drop zone */}
       <div
         className="upload-zone"
-        onClick={() => fileInputRef.current?.click()}
+        onClick={onUpload}
         onDragOver={e => e.preventDefault()}
         onDrop={e => {
           e.preventDefault()
           const file = e.dataTransfer.files?.[0]
-          if (!file) return
-          onUpload({ target: { files: [file] } })
+          if (file) onFileChange(file)   // pass raw File object
         }}
       >
         {designUrl ? (
@@ -161,61 +184,51 @@ function DesignTab({ fileInputRef, designUrl, decal, onUpload, onClear, onDecalC
         )}
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={onUpload}
-      />
-
-      <button className="ai-generate-btn" onClick={onOpenAI}>
+      <button className="ai-generate-btn" onClick={onOpenAI}
+        style={{ width: '100%', marginTop: 8 }}>
         ✨ Generate with AI
       </button>
 
       {designUrl && (
         <>
           <button className="btn-clear" onClick={onClear}>✕ Remove design</button>
+
           <div className="decal-controls">
-            <label className="section-label">Decal Position X</label>
-            <input
-              type="range"
-              min={0.1}
-              max={0.9}
-              step={0.01}
-              value={decal.x}
-              onChange={e => onDecalChange({ x: parseFloat(e.target.value) })}
-            />
+            <label className="section-label">
+              Position X &nbsp;
+              <span style={{ color: '#aaa', fontFamily: 'monospace' }}>
+                {Math.round(decal.x * 100)}%
+              </span>
+            </label>
+            <input type="range" min={0.1} max={0.9} step={0.01} value={decal.x}
+              onChange={e => onDecalChange({ x: parseFloat(e.target.value) })} />
 
-            <label className="section-label">Decal Position Y</label>
-            <input
-              type="range"
-              min={0.1}
-              max={0.9}
-              step={0.01}
-              value={decal.y}
-              onChange={e => onDecalChange({ y: parseFloat(e.target.value) })}
-            />
+            <label className="section-label">
+              Position Y &nbsp;
+              <span style={{ color: '#aaa', fontFamily: 'monospace' }}>
+                {Math.round(decal.y * 100)}%
+              </span>
+            </label>
+            <input type="range" min={0.1} max={0.9} step={0.01} value={decal.y}
+              onChange={e => onDecalChange({ y: parseFloat(e.target.value) })} />
 
-            <label className="section-label">Scale</label>
-            <input
-              type="range"
-              min={0.05}
-              max={0.6}
-              step={0.01}
-              value={decal.scale}
-              onChange={e => onDecalChange({ scale: parseFloat(e.target.value) })}
-            />
+            <label className="section-label">
+              Scale &nbsp;
+              <span style={{ color: '#aaa', fontFamily: 'monospace' }}>
+                {Math.round(decal.scale * 100)}%
+              </span>
+            </label>
+            <input type="range" min={0.05} max={0.6} step={0.01} value={decal.scale}
+              onChange={e => onDecalChange({ scale: parseFloat(e.target.value) })} />
 
-            <label className="section-label">Rotation (°)</label>
-            <input
-              type="range"
-              min={-180}
-              max={180}
-              step={1}
-              value={decal.rotation}
-              onChange={e => onDecalChange({ rotation: parseFloat(e.target.value) })}
-            />
+            <label className="section-label">
+              Rotation &nbsp;
+              <span style={{ color: '#aaa', fontFamily: 'monospace' }}>
+                {decal.rotation}°
+              </span>
+            </label>
+            <input type="range" min={-180} max={180} step={1} value={decal.rotation}
+              onChange={e => onDecalChange({ rotation: parseFloat(e.target.value) })} />
           </div>
         </>
       )}
@@ -223,6 +236,7 @@ function DesignTab({ fileInputRef, designUrl, decal, onUpload, onClear, onDecalC
   )
 }
 
+// ── Text tab ──────────────────────────────────────────────────────────────────
 function TextTab({ text, textColor, fontSize, onChange }) {
   return (
     <div className="tab-section">
@@ -235,7 +249,7 @@ function TextTab({ text, textColor, fontSize, onChange }) {
         rows={3}
         maxLength={40}
       />
-      <p style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+      <p style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
         {text.length}/40 characters
       </p>
 
@@ -247,20 +261,32 @@ function TextTab({ text, textColor, fontSize, onChange }) {
           onChange={e => onChange({ textColor: e.target.value })}
           className="color-picker-input"
         />
-        <span style={{ fontSize: 13, color: '#888' }}>{textColor}</span>
+        <span style={{ fontSize: 13, color: '#666' }}>{textColor}</span>
       </div>
 
       <label className="section-label" style={{ marginTop: 16 }}>
         Font Size: {fontSize}px
       </label>
       <input
-        type="range"
-        min={24}
-        max={96}
-        step={4}
-        value={fontSize}
+        type="range" min={24} max={96} step={4} value={fontSize}
         onChange={e => onChange({ fontSize: parseInt(e.target.value, 10) })}
       />
+
+      {text && (
+        <div style={{
+          marginTop: 12,
+          padding: '10px 14px',
+          background: '#1a1a1a',
+          border: '1px solid #333',
+          textAlign: 'center',
+          fontFamily: '"Bebas Neue", Impact, sans-serif',
+          fontSize: Math.min(fontSize, 40),
+          color: textColor,
+          letterSpacing: '0.1em',
+        }}>
+          {text.toUpperCase()}
+        </div>
+      )}
     </div>
   )
 }
