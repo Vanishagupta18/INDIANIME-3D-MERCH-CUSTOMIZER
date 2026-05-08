@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
-import './Header.css'
+import './header.css'
 
 const ANIME_LINKS = [
   { slug: 'naruto',           label: 'Naruto' },
