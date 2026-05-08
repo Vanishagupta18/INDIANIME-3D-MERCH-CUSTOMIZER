@@ -19,11 +19,22 @@ connectDB()
 
 // Security middleware
 app.use(helmet())
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://127.0.0.1:3000',
+]
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? 'https://your-frontend-url.vercel.app'
-    : 'http://127.0.0.1:3000',
-  credentials: true
+  origin: (origin, cb) => {
+    // allow server-to-server tools / Postman / curl (no Origin header)
+    if (!origin) return cb(null, true)
+
+    if (allowedOrigins.includes(origin)) return cb(null, true)
+
+    return cb(new Error(`CORS blocked for origin: ${origin}`))
+  },
+  // Using JWT in Authorization header => cookies not required
+  credentials: false,
 }))
 
 // Rate limiting
