@@ -217,8 +217,8 @@ function TShirtModel({ color, designs, onSurfaceClick, onDesignSelect }) {
     })
 
     const box = new THREE.Box3().setFromObject(clonedScene)
-    const size = box.getSize(new THREE.Vector3())
-    const maxDim = Math.max(size.x, size.y, size.z)
+    const modelSize = box.getSize(new THREE.Vector3())
+    const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z)
     if (maxDim > 0) clonedScene.scale.setScalar(1.6 / maxDim)
 
     const box2   = new THREE.Box3().setFromObject(clonedScene)
