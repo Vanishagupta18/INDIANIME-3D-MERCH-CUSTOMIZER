@@ -23,9 +23,8 @@ connectDB()
 // Security middleware
 app.use(helmet())
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://127.0.0.1:3000',
-]
+
+const allowedOrigins = [process.env.FRONTEND_URL || 'http://127.0.0.1:3000']
 
 app.use(cors({
   origin: (origin, cb) => {
