@@ -4,7 +4,9 @@ import api from '../../api/axios'
 import './Orders.css'
 
 const STATUS = {
-  pending:   { color:'#f59e0b', bg:'rgba(245,158,11,0.1)',   label:'Pending' },
+  payment_pending: { color:'#f59e0b', bg:'rgba(245,158,11,0.1)',   label:'Awaiting Payment' },
+  payment_failed:  { color:'#ef4444', bg:'rgba(239,68,68,0.1)',    label:'Payment Failed' },
+  paid:      { color:'#3b82f6', bg:'rgba(59,130,246,0.1)',   label:'Paid' },
   confirmed: { color:'#3b82f6', bg:'rgba(59,130,246,0.1)',   label:'Confirmed' },
   shipped:   { color:'#8b5cf6', bg:'rgba(139,92,246,0.1)',   label:'Shipped' },
   delivered: { color:'#22c55e', bg:'rgba(34,197,94,0.1)',    label:'Delivered' },
@@ -53,7 +55,7 @@ export default function Orders() {
         ) : (
           <div className="orders-list">
             {orders.map(order => {
-              const st = STATUS[order.status] || STATUS.pending
+              const st = STATUS[order.status] || STATUS.payment_pending
               return (
                 <div key={order._id} className="order-card">
                   <div className="order-card__header">

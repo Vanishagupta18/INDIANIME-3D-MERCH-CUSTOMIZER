@@ -4,6 +4,9 @@ import Home from './pages/Home/Home'
 import Products from './pages/Products/Products'
 import ProductDetail from './pages/ProductDetail/ProductDetail'
 import Cart from './pages/Cart/Cart'
+import Checkout from './pages/Checkout/Checkout'
+import AIShop from './pages/AIShop/AIShop'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import Login from './pages/Login/Login'
 import Register from './pages/Register/Register'
 import Profile from './pages/Profile/Profile'
@@ -24,6 +27,8 @@ export default function App() {
         <Route path="register" element={<Register />} />
         <Route element={<ProtectedRoute />}>
           <Route path="cart" element={<Cart />} />
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="ai-shop" element={<ErrorBoundary><AIShop /></ErrorBoundary>} />
           <Route path="profile" element={<Profile />} />
           <Route path="orders" element={<Orders />} />
         </Route>

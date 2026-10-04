@@ -63,6 +63,10 @@ export default function Header() {
               Home
             </NavLink>
 
+            <NavLink to="/ai-shop" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              INDIANIME AI
+            </NavLink>
+
             <div className="nav-dropdown">
               <Link to="/products" className="nav-link">
                 Shop <i className="fa-solid fa-chevron-down" style={{ fontSize: 10 }} />
@@ -178,6 +182,7 @@ export default function Header() {
         {mobileOpen && (
           <div className="mobile-nav">
             <Link to="/" className="mobile-link" onClick={() => setMobileOpen(false)}>Home</Link>
+            <Link to="/ai-shop" className="mobile-link" onClick={() => setMobileOpen(false)}>INDIANIME AI</Link>
             <Link to="/products" className="mobile-link" onClick={() => setMobileOpen(false)}>All Products</Link>
             {ANIME_LINKS.map(a => (
               <Link key={a.slug} to={`/products?anime=${a.slug}`}
