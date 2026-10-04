@@ -395,19 +395,30 @@ export default function Customize() {
     setDesigns(prev => prev.map(d => d.id === selectedDesign ? { ...d, ...patch } : d))
   }
 
+  // Display-only estimate — the backend recomputes this from scratch at
+  // checkout via computeCustomItemPrice using the same option set (see
+  // Backend/src/services/customPricing.js). This value is never sent as a
+  // price; only the underlying config (fabric/printSide/size/color) is.
   const basePrice  = 499
   const sidePrice  = printSide === 'both' ? 100 : 0
-  const totalPrice = (basePrice + (fabricInfo[fabric]?.priceAdj || 0) + sidePrice) * Math.max(1, quantity)
+  const unitPrice  = basePrice + (fabricInfo[fabric]?.priceAdj || 0) + sidePrice
+  const totalPrice = unitPrice * Math.max(1, quantity)
 
   const handleAddToCart = () => {
     addToCart({
       _id:   `custom-${Date.now()}`,
-      name:  `Custom T-Shirt (${size})`,
-      price: totalPrice,
+      name:  `Custom T-Shirt (${size}, ${fabricInfo[fabric]?.name || fabric})`,
+      price: unitPrice, // unit price — CartContext multiplies by quantity itself
       images: [],
       anime: 'Custom Design',
       isCustom: true,
-      customColor: tshirtColor,
+      customConfig: {
+        fabric,
+        printSide,
+        size,
+        color: tshirtColor,
+        designCount: designs.length
+      }
     }, size, quantity)
     toast('Custom shirt added to cart! 🎉', 'success')
     navigate('/cart')

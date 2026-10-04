@@ -1,13 +1,16 @@
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../../context/CartContext'
 import { toast } from '../../components/ui/Toast'
+import { usePricingRules, computeShipping } from '../../hooks/usePricingRules'
 import './Cart.css'
 
 export default function Cart() {
   const { cartItems, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart()
   const navigate = useNavigate()
-  const shipping   = totalPrice > 999 ? 0 : 99
+  const rules = usePricingRules()
+  const shipping   = computeShipping(totalPrice, rules)
   const grandTotal = totalPrice + shipping
+  const freeShippingThresholdRupees = rules.freeShippingThresholdPaise / 100
 
   if (cartItems.length === 0) return (
     <div className="cart-empty page-enter">
@@ -84,7 +87,7 @@ export default function Cart() {
             </div>
             {shipping > 0 && (
               <p style={{ fontSize:12, color:'#22c55e', marginTop:-12, marginBottom:16 }}>
-                Add ₹{999 - totalPrice} more for free shipping
+                Add ₹{freeShippingThresholdRupees - totalPrice} more for free shipping
               </p>
             )}
 
@@ -95,7 +98,7 @@ export default function Cart() {
               <span className="mono">₹{grandTotal.toLocaleString()}</span>
             </div>
 
-            <button className="btn-primary summary-checkout" onClick={() => navigate('/orders')}>
+            <button className="btn-primary summary-checkout" onClick={() => navigate('/checkout')}>
               Proceed to Checkout <i className="fa-solid fa-arrow-right" />
             </button>
             <button className="btn-ghost summary-continue" onClick={() => navigate('/products')}>
