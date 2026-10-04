@@ -10,6 +10,9 @@ import productRoutes from './src/routes/productRoutes.js'
 import orderRoutes from './src/routes/orderRoutes.js'
 import cartRoutes from './src/routes/cartRoutes.js'
 import designRoutes from './src/routes/designRoutes.js'
+import policyRoutes from './src/routes/policyRoutes.js'
+import configRoutes from './src/routes/configRoutes.js'
+import aiRoutes from './src/routes/aiRoutes.js'
 import { errorHandler, notFound } from './src/middleware/errorMiddleware.js'
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -69,6 +72,9 @@ app.use('/api/products', productRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/designs', designRoutes)
+app.use('/api/policy', policyRoutes)
+app.use('/api/config', configRoutes)
+app.use('/api/ai', aiRoutes)
 
 // Error handling
 app.use(notFound)
