@@ -24,20 +24,26 @@ connectDB()
 app.use(helmet())
 
 
-const allowedOrigins = [process.env.FRONTEND_URL || 'http://127.0.0.1:3000']
+
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://indianime-3-d-merch-customizer-zck9.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+].filter(Boolean);
 
 app.use(cors({
   origin: (origin, cb) => {
-    // allow server-to-server tools / Postman / curl (no Origin header)
-    if (!origin) return cb(null, true)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
 
-    if (allowedOrigins.includes(origin)) return cb(null, true)
-
-    return cb(new Error(`CORS blocked for origin: ${origin}`))
+    console.error(`CORS blocked origin: ${origin}`);
+    return cb(new Error(`CORS blocked for origin: ${origin}`));
   },
-  // Using JWT in Authorization header => cookies not required
   credentials: false,
-}))
+}));
+
 
 // Rate limiting
 const limiter = rateLimit({
